@@ -1,7 +1,3 @@
-dear Mr. Miner, here is the best i can do. it zips multiple times. it has perfect retention.
-im looking for a cut of youtube.
-this does pictures extremely well.
-none other is the sort. i have broken the laws of shannon, and the pigeon hole. this is the best. thank you.
 <?php
 // ltrim each line
 // use decomp to check answer

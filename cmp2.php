@@ -25,7 +25,6 @@ class Comb {
     $f--;
     if ($assertion > 0 && $f == 0) {
       $assertion++;
-      $temp .= "0";
       $ic = $oc;
       goto start;
 
@@ -35,31 +34,34 @@ class Comb {
       $ic = $oc;
       goto start;
     }
-    else if ($assertion > 0 && $f > 0)
+    else if ($assertion > 0)
     {
+      $temp .= "1"; // $SPMB
       $f = $assertion;
       $assertion = 0;
-      $f--;
-      $oc = $ic;
-      $temp .= "1";
     }
-    $decrement = $f;
-    $temp = decbin(($f >> 1)%2). decbin($f%2) . $temp;
+    else
+      $temp .= "0"; // $SPMB
+    
+    $temp .= str_repeat("0",2-strlen(decbin($f%4))) . decbin($f%4);
+    $f -= $f%4;
     $f >>= 2;
-    while ($f >= 4)
+    $temp .= ($f == 0) ? "1" : "0";
+    while ($f >= 1)
     {
-      $temp .= decbin($f <= 4); // are we at zero?
-      $f >>= 2;
+      $temp .= decbin($f <= 1); // are we at zero?
+      $f -= 1;
     }
+    
     if (strlen($oc) < 1)
     {
       // Here to while : test decompress
       $temp1 = ($temp);
       $blank = "";
-      //$blank = $this->decomp($blank,$temp1);
+      $blank = $this->decomp($blank,$temp1);
       $rev = ($blank);
-     // echo $const."\n\r";
-     // echo ($rev).$oc."++++\n\r";
+      echo $const."\n\r";
+      echo strrev($rev).$oc."++++\n\r";
 
       while (strlen($temp) > 0)
       {
@@ -73,71 +75,47 @@ class Comb {
     return $this->adiff($oc, $hex, $temp, $const);
   }
 
-  public function decomp($total, &$temp)
+  public function decomp($total, &$temp, $bit = "0")
   {
     // HERE IS THE CODE FOR MAKING THE DECOMPRESSION
     // $f is ALWAYS AT LEAST 1
     // +1
     if (strlen($temp) < 1)
-      return// str_repeat("$bit",abs(strlen($total)-16));
+      return
       $total;
-    $bit = substr($temp,0,1); // This is the actual bit were using (line 24)
-    $total .= $bit;
-    $temp = substr($temp,1); // Remove the front bit
+    //$bit = substr($temp,0,1); // This is the actual bit were using (line 24)
+    $total .= "$bit";
+    $SPMB = substr($temp,0,1); // Remove the front bit
     // Next bit is the $f >= 0 bit ('>' == 1)
-    if (substr($temp,0,1) == "0") // Checking to see if the bit we just used is it (24)
+    //if (substr($temp,0,1) == "1") // line 39 (+assertion)
     {
-      $temp = substr($temp,1); // >= 0 on line 24
-      return $this->decomp(($total), $temp);
-    }
-    else if (substr($temp,0,1) == "1")
-    {
-      $total .= "$bit"; // if there is more, we subtract 1 bit (line 30)
-      $temp = substr($temp,1);
-    }
-    if (substr($temp,0,1) == "1") 
-    {
-      $total .= "$bit"; //"$bit";
-      $temp = substr($temp,1);
-      $bitLength = substr($temp,0,2); // This is the 2 bits of length
-      $number = bindec(($bitLength)); // this turns into a number
-      $total .= str_repeat("$bit",$number); // we repeat that number
-      $temp = substr($temp,2); // remove these three bits
-      if (substr($temp,0,1) == "1") // is there more? (y == 1)
-        goto fin; // go get the rest
-      $temp = substr($temp,1);  //remove the bit from the if above
-      return $this->decomp(($total), $temp);
-    }
-    else
-    {
-      //$total .= "$bit"; //"$bit";
-      $temp = substr($temp,1);  //remove the bit from the if above
-      return $this->decomp(($total), $temp); 
-    }
-    fin:
-    if (substr($temp,0,1) == "1")
-    {
-      $total .= "$bit"; //"$bit";
-      $temp = substr($temp,1); // remove 0 or more bit
-      $h = strlen($temp);
-
-      if (substr($temp,0,1) == "0")
-        $oc = rtrim($temp,"0"); // delete '0's that mean 2 bits each
-      else
-      {
-        $t = substr($temp,1,1);
-        $total .= str_repeat("$bit",bindec($t));
-        $temp = substr($temp,2);  //remove the bit from the if above and the $t
-        return $this->decomp(($total), $temp); 
+      $temp = substr($temp,1); // line 39/44 ($SPMB) 
+      $number = bindec(substr($temp,0,2)); // line 46
+      
+      $temp = substr($temp, 2); // line 46
+      
+      $temp_reps = strlen(ltrim($temp,"0"));
+      if (substr($temp,0,1) == "1") {
+        
+        $temp = substr($temp,1);
+      } 
+      else if (substr($temp,0,1) == "0")
+      { 
+        $number <<= 2;
+        $number += strlen($temp) - $temp_reps;
+        $temp = substr($temp,1);
+        //return $this->decomp(($total), $temp, (bindec($bit) ^ 1));
       }
-      $diff = $h-strlen($oc); // declare $diff
-      $temp = $oc; // match up with current $ltrim
-      $diff = $diff*2;
-      $final_bit = bindec(substr($temp,0,1)); // use up last bit of series
-      $total .= str_repeat("$bit",($diff)+$final_bit);// add to $total
-      $temp = substr($temp,1); // remove final bit
-      return $this->decomp(($total), $temp); // go around again
+      while ($number > 1)
+      {
+        $total .= "$bit";
+        $bit = ($bit ^ bindec($SPMB));
+        $number--;
+      }
+      $total .= "$bit";
+      return $this->decomp(($total), $temp, (bindec($bit) ^ 1));
     }
+
   }
 
   public function fd($g, &$z = 0)
@@ -173,15 +151,15 @@ class Comb {
       for (; $d!="" ;)
       {
     // 8 chars at a time
-        $x.= $this->fd(substr($d,0,32%(strlen($d)+1)), $z);
-        $d = substr($d,32%(strlen($d)+1));
-        $d = (strlen($d) > 32)?$d:"";
+        $x.= $this->fd(substr($d,0,4%(strlen($d)+1)), $z);
+        $d = substr($d,4%(strlen($d)+1));
+        $d = (strlen($d) > 4)?$d:"";
       }
       $z = bindec($z);
       while ($z > 0)
       {
         $x.=chr($z%256);
-        $z >>= 8;
+        $z >>= 8; 
       }
   // reset sources
       $hex = "";

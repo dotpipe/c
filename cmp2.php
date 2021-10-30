@@ -9,7 +9,7 @@ class Comb {
   public function adiff($ic, &$hex, &$temp, $const)
   {
     // leave a 1 at the end
-    $assertion = 0;
+    $assertion = 0; // This will count the flipping of bits, 1010101 for example
     start:
     if (strlen($ic) < 1)
       return $ic;
@@ -18,30 +18,27 @@ class Comb {
     $oc = ltrim($ic,"$trim");
     $f = $h-strlen($oc);
 
-    // $f is ALWAYS AT LEAST 1
-    // +1
-    // WHAT BIT ARE WE USING
-    //if ($temp == "")
     $f--;
-    if ($assertion > 0 && $f == 0) {
-      $assertion++;
-      $ic = $oc;
+    if ($assertion > 0 && $f == 0) { // Once the flipping bits are reached
+      $assertion++; // Increment counter once for each flipping bit
+      $ic = $oc; // Make sure to recount the one taken off by the flipping bit
       goto start;
 
     }
-    else if ($assertion == 0 && $f == 0) {
-      $assertion++;
-      $ic = $oc;
+    else if ($assertion == 0 && $f == 0) { // Start a new order of flipping bits
+      $assertion++; // Increment for the first flipping bit
+      $ic = $oc; // Reset the $ic variable because of the flipping bit
       goto start;
     }
-    else if ($assertion > 0)
+    else if ($assertion > 0) // if we have already seenthe flipping bits
     {
-      $temp .= "1"; // $SPMB
-      $f = $assertion;
-      $assertion = 0;
+      $temp .= "1"; // Make a assertion that we have been using the flipping bit technique
+      $f = $assertion; // turn $assertion over to $f which is the count of flipped off and on again bits
+      $ic = $oc; // Questionable line here. Have we flipped them enough?
+      $assertion = 0; // reset $assertion to count again next time. Kinda pointless with it not by reference
     }
-    else
-      $temp .= "0"; // $SPMB
+    else // If there were no assertions, and there were no flipping bits to handle, than we carry on with "0"
+      $temp .= "0"; // This tells the file that we are going straight thru with a series of bits.
     
     $temp .= str_repeat("0",2-strlen(decbin($f%4))) . decbin($f%4);
     $f -= $f%4;
@@ -55,7 +52,7 @@ class Comb {
     
     if (strlen($oc) < 1)
     {
-      // Here to while : test decompress
+      // Here down to while : test decompress
       $temp1 = ($temp);
       $blank = "";
       $blank = $this->decomp($blank,$temp1);
@@ -63,6 +60,7 @@ class Comb {
       echo $const."\n\r";
       echo strrev($rev).$oc."++++\n\r";
 
+      // Significant while
       while (strlen($temp) > 0)
       {
         $temp2 = substr($temp,0,8%(strlen($temp)+1));
@@ -81,13 +79,9 @@ class Comb {
     // $f is ALWAYS AT LEAST 1
     // +1
     if (strlen($temp) < 1)
-      return
-      $total;
-    //$bit = substr($temp,0,1); // This is the actual bit were using (line 24)
-    $total .= "$bit";
+      return $total;
+    // This is the actual bit were using (line 24)
     $SPMB = substr($temp,0,1); // Remove the front bit
-    // Next bit is the $f >= 0 bit ('>' == 1)
-    //if (substr($temp,0,1) == "1") // line 39 (+assertion)
     {
       $temp = substr($temp,1); // line 39/44 ($SPMB) 
       $number = bindec(substr($temp,0,2)); // line 46
@@ -102,17 +96,17 @@ class Comb {
       else if (substr($temp,0,1) == "0")
       { 
         $number <<= 2;
-        $number += strlen($temp) - $temp_reps;
+        $number += (strlen($temp) - $temp_reps); // Take the difference
         $temp = substr($temp,1);
-        //return $this->decomp(($total), $temp, (bindec($bit) ^ 1));
+        return $this->decomp(($total), $temp, (bindec($bit) ^ 1));
       }
       while ($number > 1)
       {
-        $total .= "$bit";
-        $bit = ($bit ^ bindec($SPMB));
-        $number--;
+        $total .= "$bit"; // Take as causal. Maybe needs to be last
+        $bit = ($bit ^ bindec($SPMB)); // Keep flipping the flipping bits
+        $number--; // Decrement for each flipped bit
       }
-      $total .= "$bit";
+      $total .= "$bit"; // Just one more bit
       return $this->decomp(($total), $temp, (bindec($bit) ^ 1));
     }
 

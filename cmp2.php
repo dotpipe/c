@@ -55,10 +55,10 @@ class Comb {
       // Here down to while : test decompress
       $temp1 = ($temp);
       $blank = "";
-      $blank = $this->decomp($blank,$temp1);
+      $blank = $this->decomp($blank,$temp1, $trim);
       $rev = ($blank);
       echo $const."\n\r";
-      echo strrev($rev).$oc."++++\n\r";
+      echo ($rev).$oc."++++\n\r";
 
       // Significant while
       while (strlen($temp) > 0)
@@ -81,6 +81,7 @@ class Comb {
     if (strlen($temp) < 1)
       return $total;
     // This is the actual bit were using (line 24)
+    $total .= "$bit";
     $SPMB = substr($temp,0,1); // Remove the front bit
     {
       $temp = substr($temp,1); // line 39/44 ($SPMB) 
@@ -97,17 +98,19 @@ class Comb {
       { 
         $number <<= 2;
         $number += (strlen($temp) - $temp_reps); // Take the difference
-        $temp = substr($temp,1);
+        $temp = substr($temp,1+strlen($temp) - $temp_reps);
         return $this->decomp(($total), $temp, (bindec($bit) ^ 1));
       }
-      while ($number > 1)
+      while ($number >= 1)
       {
-        $total .= "$bit"; // Take as causal. Maybe needs to be last
+        $total .= "$bit";// . $total; // Take as causal. Maybe needs to be last
         $bit = ($bit ^ bindec($SPMB)); // Keep flipping the flipping bits
+        //$total .= "$bit";
         $number--; // Decrement for each flipped bit
       }
-      $total .= "$bit"; // Just one more bit
-      return $this->decomp(($total), $temp, (bindec($bit) ^ 1));
+      $bit = $bit ^ bindec($SPMB);
+        $total .= "$bit"; // Just one more bit
+      return $this->decomp(($total), $temp, (bindec($bit ^ 1)));
     }
 
   }

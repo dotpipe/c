@@ -19,13 +19,13 @@ class Comb {
     $f = $h-strlen($oc);
 
     $f--;
-    if ($assertion > 0 && $f == 0) { // Once the flipping bits are reached
+    if ($trim != substr($ic,0,1) && $f == 0) { // Once the flipping bits are reached
       $assertion++; // Increment counter once for each flipping bit
       $ic = $oc; // Make sure to recount the one taken off by the flipping bit
       goto start;
 
     }
-    else if ($assertion == 0 && $f == 0) { // Start a new order of flipping bits
+    else if ($f == 0) { // Start a new order of flipping bits
       $assertion++; // Increment for the first flipping bit
       $ic = $oc; // Reset the $ic variable because of the flipping bit
       goto start;
@@ -39,26 +39,42 @@ class Comb {
     }
     else // If there were no assertions, and there were no flipping bits to handle, than we carry on with "0"
       $temp .= "0"; // This tells the file that we are going straight thru with a series of bits.
-    
-    $temp .= str_repeat("0",2-strlen(decbin($f%4))) . decbin($f%4);
-    $f -= $f%4;
-    $f >>= 2;
-    $temp .= ($f == 0) ? "1" : "0";
-    while ($f >= 1)
-    {
-      $temp .= decbin($f <= 1); // are we at zero?
-      $f -= 1;
-    }
-    
+    $temp .= ($f == 2) ? "00" : ($f >= 3) ? "01" : "1"; // The final end here is accounting to $f == 1
+    $f -= $f%4;// now remove the MOD 4 from this
+    $f >>= 2; // Make it easy to get a lower number next time
+    if ($f == 0) // Check to see if we're done
+      goto done; // Goto clean up at done
+      {
+        $temp .= ($f > 3) ? "1" : "0";  // Is $f 2 or 3 bits long?
+        if ($f > 3) // 3 flippin bits
+          $temp .= str_repeat("0",3-strlen(decbin($f%8))) . decbin($f%8);
+        else // 2 flippin bits
+          $temp .= str_repeat("0",2-strlen(decbin($f%4))) . decbin($f%4);
+        $f -= $f%8; // remove the annotated bits flipped here
+        $f >>= 3; // Scour the bits off now
+        if ($f == 0) // are we set?
+          goto done; // yes
+      }
+      {
+        $temp .= ($f > 3) ? "1" : "0";  // Is $f 2 or 3 bits long?
+        if ($f > 3) // 3 flippin bits
+          $temp .= str_repeat("0",3-strlen(decbin($f%8))) . decbin($f%8);
+        else // 2 flippin bits
+          $temp .= str_repeat("0",2-strlen(decbin($f%4))) . decbin($f%4);
+        $f -= $f%8; // remove the annotated bits flipped here
+        $f >>= 3; // Scour the bits off now
+      }
+    echo ($f > 0);
+    done:
     if (strlen($oc) < 1)
     {
       // Here down to while : test decompress
       $temp1 = ($temp);
       $blank = "";
-      $blank = $this->decomp($blank,$temp1, bindec($trim));
+      //$blank = $this->decomp($blank,$temp1, bindec($trim));
       $rev = ($blank);
-      echo $const."\n\r";
-      echo ($rev).$oc."++++\n\r";
+      //echo $const."\n\r";
+      //echo ($rev).$oc."++++\n\r";
 
       // Significant while
       while (strlen($temp) > 0)
@@ -81,7 +97,7 @@ class Comb {
     if (strlen($temp) < 1)
       return $total;
     // This is the actual bit were using (line 24)
-    //$total .= "$bit";
+    $total .= "$bit";
     $SPMB = bindec(substr($temp,0,1)); // Remove the front bit
     {
       $temp = substr($temp,1); // line 39/44 ($SPMB) 
@@ -89,25 +105,32 @@ class Comb {
       
       $temp = substr($temp, 2); // line 46
       
-      if (substr($temp,0,1) == "1") {
+      if (substr($temp,0,1) == "1") { // this was only 3 or less for bits
         
-        $temp = substr($temp,1);
-        $a = $bit;
-        $b = $bit ^ 1;
-        $total .= str_repeat("$a$b",$number);
+        $temp = substr($temp,1); // remove if checked "1"
+        $a = $bit ^ 1; // Use current bit
+        $b = $a ^ 1; // flippin bits takes off the edge of single bits
+        $c = 0; // count to $number
+        while ($number > $c)
+        {
+          $total .= str_repeat("$a$b",$number);
+          $c += 2;
+        }
+        if ($c - $number == -1)
+          $total .= "$a";
       } 
       else if (substr($temp,0,1) == "0")
       { 
         $temp = substr($temp,1);
-        $temp_reps = strlen(ltrim($temp,"0"));
-        $number <<= 2;
-        $number += (strlen($temp) - $temp_reps); // Take the difference
+        $temp_reps = strlen($temp) - strlen(ltrim($temp,"0"));
+        $temp_reps <<= 2;
+        $temp_reps += ($number); // Take the difference
         $temp = ltrim($temp,"0");
-        $total .= str_repeat("$bit",$number);
+        $temp = substr($temp,1);
+        $total .= str_repeat("$bit",$temp_reps);
       }
       return $this->decomp($total, $temp, ($bit ^ 1));
     }
-
   }
 
   public function fd($g, &$z = 0)
@@ -127,7 +150,7 @@ class Comb {
     do
     {
       $t = $this->adiff($t, $hex, $z, $r);
-    } while (strlen($t) > 16);
+    } while (strlen($t) > 8);
     $hex .= chr(bindec($t)%256);
     return $hex;
   }
@@ -143,9 +166,9 @@ class Comb {
       for (; $d!="" ;)
       {
     // 8 chars at a time
-        $x.= $this->fd(substr($d,0,4%(strlen($d)+1)), $z);
-        $d = substr($d,4%(strlen($d)+1));
-        $d = (strlen($d) > 4)?$d:"";
+        $x.= $this->fd(substr($d,0,64%(strlen($d)+1)), $z);
+        $d = substr($d,64%(strlen($d)+1));
+        $d = (strlen($d) > 64)?$d:"";
       }
       $z = bindec($z);
       while ($z > 0)
@@ -167,8 +190,8 @@ class Comb {
 $timea = date_create();
 $a = 0;
 $output = "temp__";
-$zipfile = "out.xiv";
-$filename = "pic.png";
+$zipfile = "output.xiv";
+$filename = "enwik9";
 $enw = fopen($filename,"r");
 $size = filesize($filename);
 echo "Input Size: $size\r\n";
@@ -186,7 +209,7 @@ echo "Input Size: $size\r\n";
     {
       $v = date_diff(date_create(),$timea);
       echo round($input/($x->bytes+1)*100,2) . "%   ::    ". round($x->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $x->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
-      $enw9 = fread($enw, 1000000%(filesize($filename)));
+      $enw9 = fread($enw, 300000%(filesize($filename)));
       $x->output = $x->compress($enw9);
       $x->bytes += strlen($enw9)%(filesize($filename));
       if (FALSE == fwrite($out, $x->output))

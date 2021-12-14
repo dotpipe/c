@@ -23,7 +23,7 @@ class Comb {
   
   public $output = "";
   public $bytes = 0;
-  
+  public $crush_left = 0;
   public function adiff($ic, &$hex, &$temp, $const)
   {
     // leave a 1 at the end
@@ -45,25 +45,19 @@ class Comb {
       } while ($trim == substr($ic,0,1) && substr($ic,0,1) != substr($ic,1,1));
       $trim_opp = decbin(bindec($trim) ^ 1);
       $temp .= "$trim";
-      if ($assertion == 1)
+      $assertion--;
+      if ($assertion == 0)
         $temp .= $trim_opp;
-      else if ($assertion >> 2 > 0)
+      else
       {
         while ($assertion >> 2 > 0)
         {
-          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+          $temp .= (str_repeat($trim_opp,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
           $assertion >>= 2;
         }
         
       }
-      else if ($assertion <= 3)
-      {
-        {
-          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
-          $assertion >>= 2;
-        }
-      }
-      //$temp .= "$trim";
+      $temp .= (str_repeat($trim_opp,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
     }
     else if (substr($ic,0,1) == substr($ic,1,1))
     {              // Once the first flipped bit is reached
@@ -73,25 +67,19 @@ class Comb {
       } while ($trim == substr($ic,0,1) && substr($ic,0,1) == substr($ic,1,1));
       $trim_opp = decbin(bindec($trim) ^ 1);
       $temp .= "$trim";
-      if ($assertion == 1)
+      $assertion--;
+      if ($assertion == 0)
         $temp .= "$trim";
-      else if ($assertion >> 2 > 0)
+      else
       {
         $trims = "";
         while ($assertion >> 2 > 0)
         {
-          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+          $temp .= (str_repeat($trim,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
           $assertion >>= 2; 
         }
       }
-      else
-      {
-        {
-          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
-          $assertion >>= 2;
-        }
-      }
-      $temp .= "$trim";// . str_repeat($trim_opp,2-strlen(decbin(($assertion%4)))) . decbin(($assertion%4));
+      $temp .= (str_repeat($trim_opp,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
     }
     if (strlen($ic) < 1)
     {
@@ -199,7 +187,7 @@ class Comb {
     $x = "";
     $c = 0;
     // How many times do we zip?
-    while ($c < 2)
+    while ($c < 1)
     {
       $z = 0;
       for (; $d!="" ;)
@@ -218,54 +206,68 @@ class Comb {
     $s = "";
     return $d;
   }
+
+  public function crush(string $filename, string $zipfile, int $zipcnt = 1)
+  {
+    $timea = date_create();
+    $a = 0;
+    
+    if ($zipcnt == 1)
+    {
+      rename("$zipcnt", $zipfile);
+      echo "Output size: ".filesize($zipfile)."\r\n";
+      return;
+    }
+    if ($zipcnt <= 0)
+      exit("Zip Count must be greater than 0.");
+    
+    if (strlen($filename) == 0 || strlen($zipfile) == 0)
+      exit("Filename invalid");
+    //$zipfile = "output1.xiv";
+    //$filename = "output.xiv";//"../../../Avengers.mp4"; //
+    $enw = fopen($filename,"r");
+    if (file_exists($zipcnt) && fclose($enw))
+      $enw = fopen($zipcnt, "r");
+    
+    echo "Input Size: ";
+    $size = (file_exists($zipcnt)) ? filesize($zipcnt) : filesize($filename);
+    echo $size."\r\n";
+    $out = null;
+    $out = fopen("tmp","w"); //or die("\n\rCannot open file:  $temp_file\n\r");
+    //for ($i = 0 ; $i < $zipcnt ; $i++)
+    {
+      //$a=file_get_contents("enwik9");
+      $f = 0;
+      $input = 0;
+      $m = 0;
+      $this->bytes = 0;
+      $v = date_diff(date_create(),$timea);
+      while ($this->bytes < $size)
+      {
+        $v = date_diff(date_create(),$timea);
+        echo round($input/($this->bytes+1)*100,2) . "%   ::    ". round($this->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $this->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
+        $enw9 = fread($enw, 10000%(filesize($filename)+1));
+        $this->output = $this->compress($enw9);
+        $this->bytes += strlen($enw9)%(filesize($filename)+1);
+        if (FALSE == fwrite($out, $this->output))
+        {
+            echo "ERROR: CANNOT CONTINUE";
+            exit();
+        }
+        $input += strlen($this->output);
+      }
+      fclose($out);
+      fclose($enw);
+      
+      $a++;
+      echo round($input/($this->bytes+1)*100,2) . "%   ::    ". round($this->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $this->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
+      rename("tmp",($zipcnt-1));
+      echo "\n\r";
+    }
+    return $this->crush($zipcnt-1, $zipfile, $zipcnt-1);
+  }
 }
 
-$timea = date_create();
-$a = 0;
-$output = "temp__";
-$zipfile = "output.xiv";
-$filename = "pic.png"; //"../../../Avengers.mp4"; //
-$enw = fopen($filename,"r");
-$size = filesize($filename);
-echo "Input Size: $size\r\n";
-    
-    $out = null;
-    $out = fopen("temp__","w") or die("\n\rCannot open file:  $output\n\r");
-
-    //$a=file_get_contents("enwik9");
-    $f = 0;
-    $input = 0;
-    $x = new Comb();
-    $m = 0;
-
-    while ($x->bytes < $size)
-    {
-      $v = date_diff(date_create(),$timea);
-      echo round($input/($x->bytes+1)*100,2) . "%   ::    ". round($x->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $x->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
-      $enw9 = fread($enw, 10000%(filesize($filename)+1));
-      $x->output = $x->compress($enw9);
-      $x->bytes += strlen($enw9)%(filesize($filename));
-      if (FALSE == fwrite($out, $x->output))
-      {
-          echo "ERROR: CANNOT CONTINUE";
-          exit();
-      }
-      $input += strlen($x->output);
-    }
-    fclose($out);
-    fclose($enw);
-    
-    $a++;
-    echo round($input/$x->bytes*100,2) . "%   ::    ". round($x->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $x->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
-      
-    rename("$output","tmp");
-    $enw = fopen("tmp","r");
-    $size = filesize("tmp");
-    $filename = "$output";
-    $output = "tmp";
-    echo "\n\r";
-
-rename("tmp", $zipfile);
-echo "Output size: ".filesize($zipfile)."\r\n";
-
+$x = new Comb();
+$x->crush($argv[1], $argv[2], $argv[3]);
 ?>

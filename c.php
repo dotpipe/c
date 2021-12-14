@@ -43,39 +43,55 @@ class Comb {
         $assertion++; // Increment counter once for each flipping bit
         $ic = substr($ic, 2); // Make sure to reset to the flipping bit
       } while ($trim == substr($ic,0,1) && substr($ic,0,1) != substr($ic,1,1));
-      // Right above, there I made sure the flipping bits didnt flip off
+      $trim_opp = decbin(bindec($trim) ^ 1);
       $temp .= "$trim";
       if ($assertion == 1)
-        $temp .= decbin(bindec($trim) ^ 1); // Just goes to show you the flipping bits
-      else
+        $temp .= $trim_opp;
+      else if ($assertion >> 2 > 0)
       {
-        //echo decbin(!($assertion%4)) . " " . decbin(($assertion%4)) . "\n";
-        while ($assertion > 0)
+        while ($assertion >> 2 > 0)
         {
-          // Again more of the flipping bits. Just dont' get put off, because every 1st of 3 bits is another flipped bit ($trim ^ 1)
-          // BTW, You're going to have to use the ! operator to get this right.
-          $temp .= str_repeat(decbin(bindec($trim) ^ 1),3-strlen(decbin(!($assertion%4)))) . decbin(!($assertion%4));
-          $assertion >>= 2; 
+          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+          $assertion >>= 2;
+        }
+        
+      }
+      else if ($assertion <= 3)
+      {
+        {
+          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+          $assertion >>= 2;
         }
       }
+      //$temp .= "$trim";
     }
     else if (substr($ic,0,1) == substr($ic,1,1))
-    { 
-      $h = strlen($ic);
-      $oc = ltrim($ic,"$trim");
-      $assertion = $h-strlen($oc);
-      $ic = $oc;
+    {              // Once the first flipped bit is reached
+      do {
+        $assertion++; // Increment counter once for each flipping bit
+        $ic = substr($ic, 2); // Make sure to reset to the flipping bit
+      } while ($trim == substr($ic,0,1) && substr($ic,0,1) == substr($ic,1,1));
+      $trim_opp = decbin(bindec($trim) ^ 1);
       $temp .= "$trim";
       if ($assertion == 1)
         $temp .= "$trim";
-      else
+      else if ($assertion >> 2 > 0)
       {
-        while ($assertion > 0)
+        $trims = "";
+        while ($assertion >> 2 > 0)
         {
-          $temp .= str_repeat("0",2-strlen(decbin(!($assertion%4)))) . decbin(!($assertion%4));
+          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
           $assertion >>= 2; 
         }
       }
+      else
+      {
+        {
+          $temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+          $assertion >>= 2;
+        }
+      }
+      $temp .= "$trim";// . str_repeat($trim_opp,2-strlen(decbin(($assertion%4)))) . decbin(($assertion%4));
     }
     if (strlen($ic) < 1)
     {
@@ -90,7 +106,7 @@ class Comb {
       // Significant while
       while (strlen($temp) > 0)
       {
-        $temp2 = strrev(substr($temp,0,8%(strlen($temp)+1)));
+        $temp2 = (substr($temp,0,8%(strlen($temp)+1)));
         $hex .= chr(bindec($temp2));
         $temp = (strlen($temp) >= 8)?substr($temp,8%(strlen($temp)+1)):"";
       }
@@ -175,7 +191,6 @@ class Comb {
     {
       $t = $this->adiff($t, $hex, $z, $r);
     } while (strlen($t) > 8);
-    $hex .= chr(bindec($t)%256); 
     return $hex;
   }
 
@@ -190,15 +205,9 @@ class Comb {
       for (; $d!="" ;)
       {
     // 8 chars at a time
-        $x.= $this->fd(substr($d,0,2000%(strlen($d)+1)), $z);
+        $x .= $this->fd(substr($d,0,2000), $z);
         $d = substr($d,2000%(strlen($d)+1));
-        $d = (strlen($d) > 2000)?$d:"";
-      }
-      $z = bindec($z);
-      while ($z > 0)
-      {
-        $x.=chr(strrev($z)%256);
-        $z >>= 8; 
+        $d = ""; //(strlen($d) < 10)?$d:"";
       }
   // reset sources
       $hex = "";
@@ -215,7 +224,7 @@ $timea = date_create();
 $a = 0;
 $output = "temp__";
 $zipfile = "output.xiv";
-$filename = "enwik9"; //"../../../Avengers.mp4"; //
+$filename = "pic.png"; //"../../../Avengers.mp4"; //
 $enw = fopen($filename,"r");
 $size = filesize($filename);
 echo "Input Size: $size\r\n";
@@ -229,11 +238,11 @@ echo "Input Size: $size\r\n";
     $x = new Comb();
     $m = 0;
 
-    while ($x->bytes < $size-1)
+    while ($x->bytes < $size)
     {
       $v = date_diff(date_create(),$timea);
       echo round($input/($x->bytes+1)*100,2) . "%   ::    ". round($x->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $x->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
-      $enw9 = fread($enw, 10000%(filesize($filename)));
+      $enw9 = fread($enw, 10000%(filesize($filename)+1));
       $x->output = $x->compress($enw9);
       $x->bytes += strlen($enw9)%(filesize($filename));
       if (FALSE == fwrite($out, $x->output))

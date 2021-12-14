@@ -24,6 +24,9 @@ class Comb {
   public $output = "";
   public $bytes = 0;
   public $crush_left = 0;
+  public $input = 0;
+  public $v;
+
   public function adiff($ic, &$hex, &$temp, $const)
   {
     // leave a 1 at the end
@@ -207,64 +210,76 @@ class Comb {
     return $d;
   }
 
-  public function crush(string $filename, string $zipfile, int $zipcnt = 1)
+  public function crush(string $filename, string $zipfile, int $zipcnt = 1, string $input_name = "")
   {
     $timea = date_create();
     $a = 0;
-    
-    if ($zipcnt == 1)
+
+    if ($zipcnt == 0 && $input_name != "")
     {
+      
+      echo round($this->input/(filesize($input_name)+1)*100 ,2) . "%   ::    ". round($this->bytes/(filesize($filename))*100 ,2). "%      :: ($this->input / " . filesize($input_name) . ")      :: " .$this->v->i.":". ($this->v->s + $this->v->f)."\r";
       rename("$zipcnt", $zipfile);
-      echo "Output size: ".filesize($zipfile)."\r\n";
+      echo "\r\nOutput size: ".filesize($zipfile)."\r\n";
       return;
     }
+    $this->input = 0;
     if ($zipcnt <= 0)
       exit("Zip Count must be greater than 0.");
     
     if (strlen($filename) == 0 || strlen($zipfile) == 0)
       exit("Filename invalid");
+
     //$zipfile = "output1.xiv";
     //$filename = "output.xiv";//"../../../Avengers.mp4"; //
     $enw = fopen($filename,"r");
-    if (file_exists($zipcnt) && fclose($enw))
+    if (file_exists($zipcnt))
+    {
+      fclose($enw);
       $enw = fopen($zipcnt, "r");
-    
-    echo "Input Size: ";
-    $size = (file_exists($zipcnt)) ? filesize($zipcnt) : filesize($filename);
-    echo $size."\r\n";
+    }
+
+    //echo "Input Size: ";
+    $size = 0; //(file_exists($zipcnt)) ? filesize($zipcnt) : filesize($input_name);
+    if ($input_name == "") {
+      $input_name = $filename;
+      echo "Input Size: " . filesize($input_name) . "\r\n";
+      $size = (file_exists($zipcnt)) ? filesize($zipcnt) : filesize($input_name);
+      $this->v = date_diff(date_create(),$timea);
+    }
+    //echo $size."\r\n";
     $out = null;
     $out = fopen("tmp","w"); //or die("\n\rCannot open file:  $temp_file\n\r");
     //for ($i = 0 ; $i < $zipcnt ; $i++)
     {
       //$a=file_get_contents("enwik9");
       $f = 0;
-      $input = 0;
+      $this->input = 0;
       $m = 0;
       $this->bytes = 0;
-      $v = date_diff(date_create(),$timea);
-      while ($this->bytes < $size)
+      $this->v = date_diff(date_create(),$timea);
+      while ($this->bytes < filesize($filename))
       {
-        $v = date_diff(date_create(),$timea);
-        echo round($input/($this->bytes+1)*100,2) . "%   ::    ". round($this->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $this->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
+        $this->v = date_diff(date_create(),$timea);
+        echo round($this->input/(filesize($input_name)+1)*100 ,2) . "%   ::    ". round($this->bytes/(filesize($filename))*100 ,2). "%      :: ($this->input / " . filesize($input_name) . ")      :: " .$this->v->i.":". ($this->v->s + $this->v->f)."\r";
         $enw9 = fread($enw, 10000%(filesize($filename)+1));
         $this->output = $this->compress($enw9);
-        $this->bytes += strlen($enw9)%(filesize($filename)+1);
+        $this->bytes += strlen($enw9);
         if (FALSE == fwrite($out, $this->output))
         {
             echo "ERROR: CANNOT CONTINUE";
             exit();
         }
-        $input += strlen($this->output);
+        $this->input += strlen($this->output);
       }
       fclose($out);
       fclose($enw);
       
       $a++;
-      echo round($input/($this->bytes+1)*100,2) . "%   ::    ". round($this->bytes/(filesize($filename)+1)*100 ,2). "%      :: ($input / $this->bytes)      :: " .$v->i.":". ($v->s + $v->f)."\r";
       rename("tmp",($zipcnt-1));
-      echo "\n\r";
+      
     }
-    return $this->crush($zipcnt-1, $zipfile, $zipcnt-1);
+    return $this->crush($zipcnt-1, $zipfile, $zipcnt-1, $input_name);
   }
 }
 

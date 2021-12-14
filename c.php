@@ -53,14 +53,14 @@ class Comb {
         $temp .= $trim_opp;
       else
       {
-        while ($assertion >> 2 > 0)
+        while ($assertion > 0)
         {
-          $temp .= (str_repeat($trim_opp,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+          $temp .= str_repeat($trim_opp,strlen(decbin($assertion))); //2-strlen((decbin(($assertion%4))))) . (decbin(($assertion%4))));
           $assertion >>= 2;
         }
-        
+        $temp .= "$trim";
       }
-      $temp .= (str_repeat($trim_opp,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+      //$temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
     }
     else if (substr($ic,0,1) == substr($ic,1,1))
     {              // Once the first flipped bit is reached
@@ -76,13 +76,15 @@ class Comb {
       else
       {
         $trims = "";
-        while ($assertion >> 2 > 0)
+        while ($assertion > 0)
         {
-          $temp .= (str_repeat($trim,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+          $temp .= str_repeat($trim,strlen(decbin($assertion)));//$temp .= (str_repeat($trim,2-strlen((decbin(($assertion%4))))) . (decbin(($assertion%4))));
           $assertion >>= 2; 
         }
+        $temp .= "$trim_opp";
       }
-      $temp .= (str_repeat($trim_opp,3-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
+      
+      //$temp .= (str_repeat($trim_opp,2-strlen(strrev(decbin(!($assertion%4))))) . strrev(decbin(!($assertion%4))));
     }
     if (strlen($ic) < 1)
     {
@@ -196,9 +198,9 @@ class Comb {
       for (; $d!="" ;)
       {
     // 8 chars at a time
-        $x .= $this->fd(substr($d,0,2000), $z);
-        $d = substr($d,2000%(strlen($d)+1));
-        $d = ""; //(strlen($d) < 10)?$d:"";
+        $x .= $this->fd(substr($d,0,1000), $z);
+        $d = (strlen($d) >= 1000)?$d:"";
+        $d = substr($d,1000%(strlen($d)+1));
       }
   // reset sources
       $hex = "";
@@ -249,10 +251,9 @@ class Comb {
     }
     //echo $size."\r\n";
     $out = null;
-    $out = fopen("tmp","w"); //or die("\n\rCannot open file:  $temp_file\n\r");
-    //for ($i = 0 ; $i < $zipcnt ; $i++)
+    $out = fopen("tmp","w");
+    
     {
-      //$a=file_get_contents("enwik9");
       $f = 0;
       $this->input = 0;
       $m = 0;
@@ -261,7 +262,7 @@ class Comb {
       while ($this->bytes < filesize($filename))
       {
         $this->v = date_diff(date_create(),$timea);
-        echo round($this->input/(filesize($input_name)+1)*100 ,2) . "%   ::    ". round($this->bytes/(filesize($filename))*100 ,2). "%      :: ($this->input / " . filesize($input_name) . ")      :: " .$this->v->i.":". ($this->v->s + $this->v->f)."\r";
+        echo round($this->input/($this->bytes + 1)*100 ,2) . "%   ::    ". round($this->bytes/(filesize($input_name)+1)*100 ,2). "%      :: ($this->input / " . filesize($input_name) . ")      :: " .$this->v->i.":". ($this->v->s + $this->v->f)."\r";
         $enw9 = fread($enw, 10000%(filesize($filename)+1));
         $this->output = $this->compress($enw9);
         $this->bytes += strlen($enw9);

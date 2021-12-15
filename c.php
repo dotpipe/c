@@ -232,8 +232,6 @@ class Comb {
     if (strlen($filename) == 0 || strlen($zipfile) == 0)
       exit("Filename invalid");
 
-    //$zipfile = "output1.xiv";
-    //$filename = "output.xiv";//"../../../Avengers.mp4"; //
     $enw = fopen($filename,"r");
     if (file_exists($zipcnt))
     {
@@ -241,8 +239,7 @@ class Comb {
       $enw = fopen($zipcnt, "r");
     }
 
-    //echo "Input Size: ";
-    $size = 0; //(file_exists($zipcnt)) ? filesize($zipcnt) : filesize($input_name);
+    $size = 0; 
     if ($input_name == "") {
       $input_name = $filename;
       echo "Input Size: " . filesize($input_name) . "\r\n";
@@ -285,5 +282,6 @@ class Comb {
 }
 
 $x = new Comb();
+// Arguments: Input, Output, Zip iterations
 $x->crush($argv[1], $argv[2], $argv[3]);
 ?>

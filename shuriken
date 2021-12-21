@@ -1,0 +1,54 @@
+<?php
+
+class shuriken
+{
+    public $maps;
+    public $markers;
+    public $path_cntr;
+    public $line = "";
+    public $map_iter;
+    public $dictionary = [];
+
+    public function decodePath()
+    {
+        $bin = 0;
+        foreach ($this->maps as $key)
+        {
+            $b = 0;
+            $bin = 0;
+            while (strlen($key) > $b)
+            {
+                $bin <<= 8;
+                $bin += ord($key[$b]);
+                $b++;
+            }
+            do
+            {
+                // This is greater than 7, so we add seven
+                // and move over 3, likewise vice versa but subtract
+                $this->line .= ($bin >= 7) ? "1" : "0";
+                $bin = $bin >> 3;
+            } while ($bin >= 7);
+
+            $this->line .= str_repeat("0",3-strlen(decbin($bin))) . decbin($bin);
+        }
+    }
+}
+
+$x = new shuriken();
+
+$x->maps = str_split(file_get_contents("dave.JPG"),7);
+
+$x->decodePath();
+
+$byte_array = str_split($x->line,8);
+
+$str = "";
+
+foreach ($byte_array as $kv)
+{
+    $str .= chr(bindec($kv));
+}
+$byte_array = "";
+echo strlen($str);
+?>

@@ -26,12 +26,13 @@ class shuriken
             {
                 // This is greater than 7, so we add seven
                 // and move over 3, likewise vice versa but subtract
-                $this->line .= ($bin >= 7) ? "1" : "0";
-                $bin = $bin >> 3;
-            } while ($bin >= 7);
+                $this->line .= ($bin >> 8 > 0) ? "1" : "0";
+                $bin >>= 8;
+            } while ($bin >> 8 > 0);
 
-            $this->line .= str_repeat("0",3-strlen(decbin($bin))) . decbin($bin);
+            $this->line .= str_repeat("0",8-strlen(decbin($bin))) . decbin($bin);
         }
+
     }
 }
 

@@ -15,34 +15,73 @@ class shuriken
         foreach ($this->maps as $key)
         {
             $b = 0;
-            $bin = 0;
             while (strlen($key) > $b)
             {
                 $bin <<= 8;
                 $bin += ord($key[$b]);
                 $b++;
             }
+            $bin = abs($bin);
             do
             {
-                // This is greater than 7, so we add seven
-                // and move over 3, likewise vice versa but subtract
-                $this->line .= ($bin >> 8 > 0) ? "1" : "0";
-                $bin >>= 8;
-            } while ($bin >> 8 > 0);
-
+                // This is greater than 256, so we add seven
+                // and move over 8, likewise vice versa but subtract
+                $this->line .= ($bin >> 8 > 255) ? "1" : "0";
+                $bin -= 255;
+                $bin = $bin >> 8;
+            } while ($bin > 255);
+            //echo "$bin ";
             $this->line .= str_repeat("0",8-strlen(decbin($bin))) . decbin($bin);
         }
+    }
 
+    public function encodePath($filename)
+    {
+        
+        $info = fopen($filename, "r");
+        $outfo = fopen($filename.".xiv", "w");
+        $decbin = "";
+        $this->maps = fread($info, filesize($filename));
+        foreach (str_split($this->maps,1) as $kv)
+        {
+            $decbin .= str_repeat("0",8-strlen(decbin(ord($kv)))) . decbin(ord($kv));
+        }
+
+        while (strlen($decbin) > 0)
+        {
+            $bin1s = ltrim('1',$decbin);
+            $last = substr($decbin,0,8);
+            $x = strlen($bin1s);
+            $last = bindec($last);
+
+            for ($i = 0 ; $i < strlen($decbin) - $x ; $i++)
+            {
+                $last = (($last + 256));
+                $last <<= 8;
+            }
+            $last >>= 8;
+            $string = "";
+            while ($last > 0)
+            {
+                $byte = $last%256;
+                $string .= chr($byte);
+                $last = ($last >> 8);
+            }
+            fwrite($outfo,$string);
+            $decbin = substr($decbin, -$x - 8);
+        }
+        fclose($outfo);
+        fclose($info);
     }
 }
 
 $x = new shuriken();
 
-$x->maps = str_split(file_get_contents("dave.JPG"),7);
+$x->maps = str_split(file_get_contents("shuriken.zip"),7);
 
 $x->decodePath();
 
-$byte_array = str_split($x->line,8);
+$byte_array = str_split($x->line,7);
 
 $str = "";
 
@@ -50,6 +89,10 @@ foreach ($byte_array as $kv)
 {
     $str .= chr(bindec($kv));
 }
+
 $byte_array = "";
-echo strlen($str);
+
+file_put_contents("out.file", $str);
+
+//$x->encodePath("out1.file");
 ?>

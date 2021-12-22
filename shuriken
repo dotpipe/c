@@ -9,29 +9,65 @@ class shuriken
     public $map_iter;
     public $dictionary = [];
 
+    function __construct($filename, $out)
+    {
+        
+        $fin = fopen("$filename", "r");
+        $fout = fopen("$out","w");
+
+        $left = 0;
+
+        $str = "";
+        $compressed_rate = 0;
+        while (filesize("$filename") > $this->map_iter)
+        {
+            $this->maps = str_split(fread($fin,15));
+    
+            $this->map_iter += count($this->maps);
+    
+            $this->decodePath();
+    
+            if ($this->map_iter%1400000 == 0)
+            {
+                $this->aggregateBits($filename, $fout);
+            }
+        }
+
+        $this->aggregateBits($filename, $fout);
+        echo "\n";
+        fclose($fin);
+        fclose($fout); 
+    }
+
     public function decodePath()
     {
         $bin = 0;
+        $rep = "";
         foreach ($this->maps as $key)
         {
             $b = 0;
-            while (strlen($key) > $b)
+            $rep .= $key;
+            if (strlen($rep) != count($this->maps) && strlen($rep) < 8)
+            {
+                continue;
+            }
+            while (strlen($rep) > $b)
             {
                 $bin <<= 8;
-                $bin += ord($key[$b]);
+                $bin += ord($rep[$b]);
                 $b++;
             }
-            $bin = abs($bin);
+            $rep = "";
             do
             {
                 // This is greater than 256, so we add seven
                 // and move over 8, likewise vice versa but subtract
-                $this->line .= ($bin >> 8 > 255) ? "1" : "0";
-                $bin -= 255;
-                $bin = $bin >> 8;
-            } while ($bin > 255);
-            //echo "$bin ";
-            $this->line .= str_repeat("0",8-strlen(decbin($bin))) . decbin($bin);
+                $this->line .= ($bin >> 7 > 127) ? "1" : "0";
+                $bin -= 127;
+                $bin = $bin >> 7;
+            } while (127 < abs($bin));
+            
+            $this->line .= str_repeat("0",7-strlen(decbin(abs($bin)))) . decbin(abs($bin));
         }
     }
 
@@ -73,26 +109,31 @@ class shuriken
         fclose($outfo);
         fclose($info);
     }
+
+    public function aggregateBits($filename, $fout)
+    {
+        $byte_array = str_split($this->line,8);
+
+        $this->line = "";
+        $str = "";
+
+        foreach ($byte_array as $kv)
+        {
+            $str .= chr(bindec($kv));
+        }
+        $this->path_cntr += strlen($str);
+        $this->display($filename);
+        fwrite($fout,$str);
+     }
+     
+     public function display($filename)
+     {
+        echo "Percent done: " . round($this->map_iter/filesize("$filename"),3)*100 . " %    \t\t\t";
+        echo "Compression Rate: " . round($this->path_cntr/$this->map_iter,3)*100 . " %    \r";
+     }
 }
 
-$x = new shuriken();
+$x = new shuriken($argv[1], $argv[2]);
+$y = new shuriken($argv[2], "out1.file");
 
-$x->maps = str_split(file_get_contents("shuriken.zip"),7);
-
-$x->decodePath();
-
-$byte_array = str_split($x->line,7);
-
-$str = "";
-
-foreach ($byte_array as $kv)
-{
-    $str .= chr(bindec($kv));
-}
-
-$byte_array = "";
-
-file_put_contents("out.file", $str);
-
-//$x->encodePath("out1.file");
 ?>

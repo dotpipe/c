@@ -75,16 +75,16 @@ class shuriken
             //echo strlen($rep) . "";
             $j = 0;
             $trip = 0;
-            while (abs($check_bin - $nibbles) >= 256)
+            while (abs($check_bin - $nibbles) >= 127)
             {
                 for ($i = 0 ; ($check_bin - $nibbles) > 0; $i++)
                 {
-                    for ($j = 0 ; $j < $i && (($nibbles) < $check_bin) ; $j++)
+                    for ($j = 0 ; $j < 15 && (($nibbles) < $check_bin) ; $j++)
                     {
                         $nibbles += pow(2,$j+$i) << 1;
                         if ($nibbles > $check_bin)
                         {
-                            $this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
+                            $this->line .= str_repeat("0",4-strlen(decbin(abs($j)))) . decbin(abs($j));
                             $j = 0;
                         }
                     }
@@ -104,21 +104,14 @@ class shuriken
                             $this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
                             $j = 0;
                         }
-
-                        
                     }
-
                 }
-                //$this->line .= str_repeat("0",5-strlen(decbin(abs($h)))) . decbin(abs($h));
-                //$this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
-                
             }
             //echo "($i $j)";
             //$nibbles -=15;
             //echo ($check_bin) . "*\r\n" . ($nibbles + $first_7) . " ";
             //echo ($check_bin - $nibbles) . " 0 \r\n";
             $this->line .= str_repeat("0",8-strlen(decbin(($check_bin - $nibbles)))) . decbin(abs($check_bin - $nibbles));
-            
         }
     }
 

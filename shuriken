@@ -27,7 +27,7 @@ class shuriken
     
             $this->decodePath();
     
-            if ($this->map_iter%1400000 == 0)
+            if ($this->map_iter%140000 == 0)
             {
                 $this->aggregateBits($filename, $fout);
             }
@@ -58,16 +58,67 @@ class shuriken
                 $b++;
             }
             $rep = "";
+            $check_bin = $bin >> 8;
+            $first_7 = $bin%pow(2,8);
+            //$this->line .= str_repeat("0",3-strlen(decbin(abs($bin%8)))) . decbin(abs($bin%8));
+            $bin >>= 8;
             do
             {
                 // This is greater than 256, so we add seven
                 // and move over 8, likewise vice versa but subtract
-                $this->line .= ($bin >> 7 > 127) ? "1" : "0";
-                $bin -= 127;
-                $bin = $bin >> 7;
-            } while (127 < abs($bin));
+                $this->line .= ($bin >> 8 > 256) ? "1" : "0";
+                $bin -= (pow(2,8) - 1);
+                $bin = ($bin >> 8);
+            } while (127 < $bin);
+            $nibbles = $bin;
+            $i = 0;
+            //echo strlen($rep) . "";
+            $j = 0;
+            $trip = 0;
+            while (abs($check_bin - $nibbles) >= 256)
+            {
+                for ($i = 0 ; ($check_bin - $nibbles) > 0; $i++)
+                {
+                    for ($j = 0 ; $j < $i && (($nibbles) < $check_bin) ; $j++)
+                    {
+                        $nibbles += pow(2,$j+$i) << 1;
+                        if ($nibbles > $check_bin)
+                        {
+                            $this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
+                            $j = 0;
+                        }
+                    }
+
+                }
+                //$this->line .= str_repeat("0",4-strlen(decbin(abs($i)))) . decbin(abs($i));
+                //$this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
+                $h = 0;
+                for ( ; ($check_bin < $nibbles)  ; $h++)
+                {
+                    for ($j = 0 ; $j < $h && $nibbles > $check_bin ; $j++)
+                    { 
+                        $nibbles -= (pow(2,$h+$j) << 1);
+                        $trip += ($nibbles < $check_bin) ? 1 : 0;
+                        if ($nibbles < $check_bin)
+                        {
+                            $this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
+                            $j = 0;
+                        }
+
+                        
+                    }
+
+                }
+                //$this->line .= str_repeat("0",5-strlen(decbin(abs($h)))) . decbin(abs($h));
+                //$this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
+                
+            }
+            //echo "($i $j)";
+            //$nibbles -=15;
+            //echo ($check_bin) . "*\r\n" . ($nibbles + $first_7) . " ";
+            //echo ($check_bin - $nibbles) . " 0 \r\n";
+            $this->line .= str_repeat("0",8-strlen(decbin(($check_bin - $nibbles)))) . decbin(abs($check_bin - $nibbles));
             
-            $this->line .= str_repeat("0",7-strlen(decbin(abs($bin)))) . decbin(abs($bin));
         }
     }
 
@@ -80,7 +131,7 @@ class shuriken
         $this->maps = fread($info, filesize($filename));
         foreach (str_split($this->maps,1) as $kv)
         {
-            $decbin .= str_repeat("0",8-strlen(decbin(ord($kv)))) . decbin(ord($kv));
+            $decbin .= decbin(ord($kv));
         }
 
         while (strlen($decbin) > 0)
@@ -92,8 +143,8 @@ class shuriken
 
             for ($i = 0 ; $i < strlen($decbin) - $x ; $i++)
             {
-                $last = (($last + 256));
-                $last <<= 8;
+                $last <<= 7;
+                $last = (($last + 127));
             }
             $last >>= 8;
             $string = "";
@@ -134,6 +185,6 @@ class shuriken
 }
 
 $x = new shuriken($argv[1], $argv[2]);
-$y = new shuriken($argv[2], "out1.file");
+//$y = new shuriken($argv[2], "out1.file");
 
 ?>

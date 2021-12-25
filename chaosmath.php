@@ -21,7 +21,7 @@
             $compressed_rate = 0;
             while (filesize("$filename") > $this->map_iter)
             {
-                $this->maps = str_split(fread($fin,3));
+                $this->maps = str_split(fread($fin,8));
     
                 $this->map_iter += count($this->maps);
     
@@ -48,7 +48,7 @@
             {
                 $b = 0;
                 $rep .= $key;
-                if (strlen($rep) != count($this->maps) && strlen($rep) < 4)
+                if (strlen($rep) != count($this->maps))
                 {
                     continue;
                 }
@@ -59,10 +59,7 @@
                     $b++;
                 }
                 $rep = "";
-                $check_bin = $bin >> 8;
-                $first_7 = $bin%pow(2,8);
-                //$this->line .= str_repeat("0",3-strlen(decbin(abs($bin%8)))) . decbin(abs($bin%8));
-                $bin >>= 8;
+                $check_bin = $bin;
                 
                 do
                 {
@@ -72,13 +69,12 @@
                     $bin -= (pow(2,8) - 1);
                     $bin = ($bin >> 8);
                 } while (255 < $bin);
-                $nibbles = $bin;
+                //$nibbles = $bin;
                 $i = 0;
                 //echo strlen($rep) . "";
                 $j = 0;
                 $trip = 1;
-                
-                //$nibbles = 0; $check_bin;
+                $nibbles = 0;// $check_bin;
                 
                     
                 /*
@@ -98,36 +94,27 @@
                 */
                 //$this->line .= str_repeat("0",4-strlen(decbin(abs($i)))) . decbin(abs($i));
                 //$this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
+                //$h = 0;
                 
-                $howout = 0;
-                for ( ; abs($check_bin - $nibbles - $first_7 ) > $h ; $h++)
+                for ( ; abs($nibbles ) > 127 ; $h++)
                 {
-                    for ($j = 0 ; $j < $h && abs($check_bin - $nibbles - $first_7) > $h ; $j++)
+                    for ($j = 0 ; $j < $h && abs($nibbles) > 127 ; $j++)
                     { 
-                        $nibbles += (1 << abs($j));
-                        $trip += ($nibbles < $check_bin) ? 1 : 0;
-                        if (abs($check_bin - $nibbles - $first_7) < $h)
+                        $nibbles ^= (1 << abs($j));
+                        
+                        if (abs($nibbles) < 127)
                         {
-                            echo "($h $i $j)";
-                            $trip = 0;
-                            $this->line .= str_repeat("0",5-strlen(decbin(abs($j)))) . decbin(abs($j));
+                            $this->line .= str_repeat("0",6-strlen(decbin(abs($h)))) . decbin(abs($h));
+                            $this->line .= str_repeat("0",6-strlen(decbin(abs($j)))) . decbin(abs($j));
+                            $this->line .= str_repeat("0",7-strlen(decbin(abs($nibbles)))) . decbin(abs($nibbles));
                             $i = $j;
-                            echo ($check_bin) . "*\r\n" . ($nibbles) . " ";
-                            echo ($check_bin - $nibbles) . " 0 \r\n";
-                            break;
+                            return;
                         }
                     }
-                    $nibbles <<= 1;
-                    if (abs($check_bin - $nibbles - $first_7) < $h)
-                    break;
+                    $nibbles ^= (1 << abs($h));
                 }
+                $this->line .= "000011001" . bindec($check_bin) . "000011001";
                 
-                
-                //echo "($h $i $j)";
-                //$nibbles -=15;
-                //echo ($check_bin) . "*\r\n" . ($nibbles) . " ";
-                //echo ($check_bin - $nibbles) . " 0 \r\n";
-                // $this->line .= str_repeat("0",8-strlen(decbin(($check_bin - $nibbles)))) . decbin(abs($check_bin - $nibbles))."00";
             }
         }
 

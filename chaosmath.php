@@ -5,7 +5,7 @@
         public $maps;
         public $markers;
         public $path_cntr;
-        public $line = "";
+        public $line = "x";
         public $map_iter;
         public $dictionary = [];
 
@@ -21,7 +21,7 @@
             $compressed_rate = 0;
             while (filesize("$filename") > $this->map_iter)
             {
-                $this->maps = str_split(fread($fin,3));
+                $this->maps = str_split(fread($fin,8));
     
                 $this->map_iter += count($this->maps);
     
@@ -48,7 +48,7 @@
             {
                 $b = 0;
                 $rep .= $key;
-                if (strlen($rep) != count($this->maps) && strlen($rep) < 4)
+                if (strlen($rep) != count($this->maps) && strlen($rep) < 8)
                 {
                     continue;
                 }
@@ -59,10 +59,10 @@
                     $b++;
                 }
                 $rep = "";
-                $check_bin = $bin >> 8;
-                $first_7 = $bin%pow(2,8);
+                $check_bin = ($bin);
+                //$first_7 = $bin%pow(2,8);
                 //$this->line .= str_repeat("0",3-strlen(decbin(abs($bin%8)))) . decbin(abs($bin%8));
-                //$bin >>= 8;
+                $bin >>= 8;
                 
                 do
                 {
@@ -72,27 +72,37 @@
                     $bin -= (pow(2,8) - 1);
                     $bin = ($bin >> 8);
                 } while (255 < $bin);
-                $nibbles = $bin;
+                $nibbles = $check_bin;
+                $i = 0;
+                //echo strlen($rep) . "";
+                $j = 0;
+                $trip = 1;
                 
                 $h = 0;
                 
-                for ( ; $h < 256 && abs($check_bin - $nibbles) < 255 ; $h++)
+                for ( ; ($nibbles > 127 && $nibbles < -127) ; $h++)
                 {
-                    for ($j = 0 ; $j < $h && abs($check_bin - $nibbles) < 255 ; $j++)
-                    { 
+                    for ($j = 0 ; $j < $h && ($nibbles > 127 && $nibbles < -127) ; $j++)
+                    {
                         $nibbles += (1 << abs($j));
                         
-                        if (abs($check_bin - $nibbles) > 256)
+                        if ($nibbles < 127 && $nibbles > -127)
                         {
-                            $this->line .= chr($h). "h";
-                            $this->line .= chr($j). "j";
-                            $this->line .= chr($check_bin - $nibbles). "n";
+                            echo "($h $j)" . ($nibbles) . "\r\n";
+                            $this->line .= str_repeat("0",8-strlen(decbin(($h << 4) + $j))) . decbin(($h << 4) + $j);
+                            //$this->line .= str_repeat("0",4-strlen(decbin(($j)))) . decbin(($j));
+                            $this->line .= str_repeat("0",8-strlen(decbin(($nibbles)))) . decbin(($nibbles));
                             return;
                         }
                     }
-                    $nibbles >>= 1;
+                    //$nibbles > >= 1;
                 }
-                $this->line .= implode($this->maps) . "x";
+                $this->line .= implode($this->maps);
+                //echo "($h $i $j)";
+                //$nibbles -=15 
+                //echo ($check_bin) . "*\r\n" . ($nibbles) . " ";
+                //echo ($check_bin - $nibbles) . " 0 \r\n";
+                // $this->line .= str_repeat("0",8-strlen(decbin(($check_bin - $nibbles)))) . decbin(abs($check_bin - $nibbles))."00";
             }
         }
 
@@ -137,18 +147,23 @@
 
         public function aggregateBits($filename, $fout)
         {
-            $byte_array = str_split($this->line,8);
-
-            $this->line = "";
-            $str = "";
-
-            foreach ($byte_array as $kv)
+            foreach (explode("x",$this->line) as $v)
             {
-                $str .= chr(bindec($kv));
+                $str = "";
+                if (strlen($v) == 8)
+                {
+                    $str = "$v";
+                    $this->path_cntr += strlen($str);
+                    fwrite($fout,$str);
+                }
+                else {
+                    foreach (str_split($v,8) as $k)
+                        $str .= chr(bindec($k));
+                    fwrite($fout,$str);
+                    $this->path_cntr += strlen($str);
+                }
             }
-            $this->path_cntr += strlen($str);
             $this->display($filename);
-            fwrite($fout,$str);
          }
      
          public function display($filename)

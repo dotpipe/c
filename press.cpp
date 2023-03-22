@@ -102,32 +102,29 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 					if (ch%128 == 0)
 					{
 						i_cnt++;
+						string bin_temp((char *)(128));
 						while (i_cnt >= 128 && i_cnt - 128 > 0)
 						{
-							bin += (uint8_t)(129) + (uint8_t)((128 - i_cnt)%128);
+							bin_temp += (uint8_t)((128 - i_cnt)%128);
 							i_cnt >>= 7;
 						}
+						if (bin_temp.length() > 1)
+							bin += (uint8_t)(i_cnt);
 					}
-					else if (ch%128 <= 4 && i_cnt == 4)
+					else if (i_cnt == 4)
 					{
-						bin += (uint8_t)(128) + (uint8_t)(ch%128);
-						i_cnt = 4;
+						bin += (uint8_t)(129) + (uint8_t)(ch%128);
 					}
-					else if (ch%128 <= 4 && i_cnt > 4)
-					{
-						bin += (uint8_t)(129) + (uint8_t)(i_cnt) + (uint8_t)(ch%128);
-						i_cnt = 4;
-					}
-					else if (ch%128 > 4)
+					else if (i_cnt > 4)
 					{
 						bin += (uint8_t)(130) + (uint8_t)(i_cnt) + (uint8_t)(ch%128);
 						i_cnt = 4;
 					}
-					else
-					{
-						bin += (uint8_t)(131) + (uint8_t)(i_cnt) + (uint8_t)(ch%128);
-						i_cnt = 4;
-					}
+					// else
+					// {
+					// 	bin += (uint8_t)(131) + (uint8_t)(i_cnt) + (uint8_t)(ch%128);
+					// 	i_cnt = 4;
+					// }
 					ch >>= 7;
 				}
 				c = c.substr(0,c.length()-i);
@@ -142,30 +139,22 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 				if (ch%128 == 0)
 				{
 					i_cnt++;
+					string bin_temp((char *)(128));
 					while (i_cnt >= 128 && i_cnt - 128 > 0)
 					{
-						bin += (uint8_t)(129) + (uint8_t)((128 - i_cnt)%128);
+						bin_temp += (uint8_t)((128 - i_cnt)%128);
 						i_cnt >>= 7;
 					}
+					if (bin_temp.length() > 1)
+						bin += bin_temp + (char*)(i_cnt);
 				}
-				else if (ch%128 <= 4 && i_cnt == 4)
+				else if (i_cnt == 4)
 				{
-					bin += (uint8_t)(128) + (uint8_t)(ch%128);
-					i_cnt = 4;
+					bin += (uint8_t)(129) + (uint8_t)(ch%128);
 				}
-				else if (ch%128 <= 4 && i_cnt > 4)
-				{
-					bin += (uint8_t)(129) + (uint8_t)(i_cnt) + (uint8_t)(ch%128);
-					i_cnt = 4;
-				}
-				else if (ch%128 > 4)
+				else if (i_cnt > 4)
 				{
 					bin += (uint8_t)(130) + (uint8_t)(i_cnt) + (uint8_t)(ch%128);
-					i_cnt = 4;
-				}
-				else
-				{
-					bin += (uint8_t)(131) + (uint8_t)(i_cnt) + (uint8_t)(ch%128);
 					i_cnt = 4;
 				}
 				ch >>= 7;
@@ -198,7 +187,7 @@ int main(int argc, char *argv[]) {
 	vector<ofstream> ofstreams;
 	string fname = "";
 
-    	printf("Press, Copyright Aunk 2016\n\r");
+    	printf("Press, Copyright Aunk 2016\n\r: ? to exit - : ! to go back\r\n");
 
 
 	std::setlocale(LC_ALL, "en_US-UTF8");
@@ -210,6 +199,11 @@ int main(int argc, char *argv[]) {
 			cin >> fname;
 			if (fname == "?")
 				break;
+			if (fname == "!" && filenames.size() > 0)
+			{
+				filenames.pop_back();
+				continue;
+			}
 			filenames.push_back(fname);
 		} while (fname != "?");
 

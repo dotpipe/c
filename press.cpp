@@ -76,8 +76,8 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 	uint32_t buf_str_len = 6400000;
 	const int MAX_BITS = 800;
 	out << "-----------------S" << buf.length() << "START---" << outfilename << "-----------------S";
-	for ( ; 0 < buf.length() ; ) {
-
+	for ( ; 0 < buf.length() ; )
+	{
 		string bf = (buf.length() > buf_str_len) ? buf.substr(0, buf_str_len) : buf;
 		
 		while (bf.length() > 0)
@@ -107,6 +107,8 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 						l_cnt += ((ch%32) << 1) + 1;
 						ch >>= 5;
 					}
+					else
+						l_cnt <<= 1;
 					if (ch%32 >= 8)
 					{
 						ch -= 8;
@@ -114,6 +116,8 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 						h_cnt += ((ch%32) << 1) + 1;
 						ch >>= 5;
 					}
+					else
+						h_cnt <<= 1;
 					if (ch%32 >= 4)
 					{
 						ch -= 4;
@@ -121,6 +125,8 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 						i_cnt += ((ch%32) << 1) + 1;
 						ch >>= 5;
 					}
+					else
+						i_cnt <<= 1;
 					if (ch%32 >= 2)
 					{
 						ch -= 2;
@@ -128,12 +134,16 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 						j_cnt += ((ch%32) << 1) + 1;
 						ch >>= 5;
 					}
+					else
+						j_cnt <<= 1;
 					if (ch%32 >= 0)
 					{
 						k_cnt <<= 2;
 						k_cnt += ((ch%32) << 1) + 1;
 						ch >>= 5;
 					}
+					else
+						k_cnt <<= 1;
 					if (j_cnt > pow(2,62) || i_cnt > pow(2,62) || h_cnt > pow(2,62) || k_cnt > pow(2,62) || l_cnt > pow(2,62))
 					{
 						while (j_cnt > 0 || h_cnt > 0 || i_cnt > 0 || k_cnt > 0 || l_cnt > 0)

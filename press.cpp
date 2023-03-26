@@ -74,10 +74,10 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 	uint64_t buf_left = buf_len;
 	string bin = "";
 	uint32_t buf_str_len = 6400000;
-	const int MAX_BITS = 800;
+	const int MAX_BITS = 8000;
 	out << "-----------------S" << buf.length() << "START---" << outfilename << "-----------------S";
-	for ( ; 0 < buf.length() ; )
-	{
+	for ( ; 0 < buf.length() ; ) {
+
 		string bf = (buf.length() > buf_str_len) ? buf.substr(0, buf_str_len) : buf;
 		
 		while (bf.length() > 0)
@@ -89,7 +89,7 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 			{
 				c.append(bitset<8>(x).to_string());
 			}
-			uint64_t i = 64, j_cnt = 0, h_cnt = 0, k_cnt = 0, i_cnt = 0, l_cnt = 0;
+			uint64_t i = 64, n_cnt, m_cnt = 0, j_cnt = 0, h_cnt = 0, p_cnt = 0, k_cnt = 0, i_cnt = 0, l_cnt = 0, q = 0;
 			uint64_t ch = 0;
 			while (c.length() > 0)
 			{
@@ -97,84 +97,113 @@ void collect(ifstream& in, ofstream& out, string outfilename) {
 					i = c.length();
 				// if (i > 64)
 				// 	i = 8;
+				
+				uint64_t bin_arr = 0, aa_cnt = 0;
 				ch = bitset<64>(c.substr(0,i%(c.length()+1))).to_ulong(); //(c.length()-(i%(c.length()+1)))).to_ullong();
 				while (ch > 0)
 				{
-					if (ch%32 >= 16)
+					if (ch%256 >= 128)
+					{
+						ch -= 128;
+						aa_cnt <<= 1;
+						aa_cnt++;
+						p_cnt <<= 7;
+						p_cnt += ((ch)%128);
+						ch >>= 8;
+					}
+					else if (ch%256 >= 64)
+					{
+						ch -= 64;
+						aa_cnt <<= 2;
+						aa_cnt++;
+						k_cnt <<= 1;
+						k_cnt += ((ch)%64);
+						ch >>= 8;
+					}
+					else if (ch%256 >= 32)
+					{
+						ch -= 32;
+						aa_cnt <<= 3;
+						aa_cnt++;
+						n_cnt <<= 1;
+						n_cnt += ((ch)%32);
+						ch >>= 8;
+					}
+					else if (ch%256 >= 16)
 					{
 						ch -= 16;
-						l_cnt <<= 5;
-						l_cnt += ((ch%32) << 1) + 1;
-						ch >>= 5;
-					}
-					else
+						aa_cnt <<= 4;
+						aa_cnt++;
 						l_cnt <<= 1;
-					if (ch%32 >= 8)
+						l_cnt += ((ch)%16);
+						ch >>= 8;
+					}
+					else if (ch%256 >= 8)
 					{
 						ch -= 8;
-						h_cnt <<= 4;
-						h_cnt += ((ch%32) << 1) + 1;
-						ch >>= 5;
-					}
-					else
+						aa_cnt <<= 5;
+						aa_cnt++;
 						h_cnt <<= 1;
-					if (ch%32 >= 4)
+						h_cnt += ((ch)%8);
+						ch >>= 8;
+					}
+					else if (ch%256 >= 4)
 					{
 						ch -= 4;
-						i_cnt <<= 3;
-						i_cnt += ((ch%32) << 1) + 1;
-						ch >>= 5;
+						aa_cnt <<= 6;
+						aa_cnt++;
+						i_cnt <<= 12;
+						i_cnt += ((ch)%4);
+						ch >>= 8;
 					}
-					else
-						i_cnt <<= 1;
-					if (ch%32 >= 2)
+					else if (ch%256 >= 2)
 					{
 						ch -= 2;
-						j_cnt <<= 2;
-						j_cnt += ((ch%32) << 1) + 1;
-						ch >>= 5;
-					}
-					else
+						aa_cnt <<= 7;
+						aa_cnt++;
 						j_cnt <<= 1;
-					if (ch%32 >= 0)
-					{
-						k_cnt <<= 2;
-						k_cnt += ((ch%32) << 1) + 1;
-						ch >>= 5;
+						j_cnt += ((ch)%2);
+						ch >>= 8;
 					}
-					else
-						k_cnt <<= 1;
-					if (j_cnt > pow(2,62) || i_cnt > pow(2,62) || h_cnt > pow(2,62) || k_cnt > pow(2,62) || l_cnt > pow(2,62))
+					else if (ch%256 >= 0)
 					{
-						while (j_cnt > 0 || h_cnt > 0 || i_cnt > 0 || k_cnt > 0 || l_cnt > 0)
+						aa_cnt <<= 8;
+						aa_cnt++;
+						m_cnt <<= 1;
+						m_cnt += ((ch)%2);
+						ch >>= 8;
+					}
+					if (aa_cnt > pow(2,62))
+					{
+						while (n_cnt%2 > 0 || p_cnt%2 > 0 || k_cnt%2 > 0 || i_cnt%2 > 0 || h_cnt%2 > 0 || j_cnt%2 > 0 || l_cnt > 1 || m_cnt > 1)// || m_cnt > 1)
 						{
-							bin += (char)((j_cnt%256)) + (char)(h_cnt%256) + (char)(i_cnt%256) + (char)(k_cnt%256) + (char)(l_cnt%256);
-							i_cnt >>= 8;
-							j_cnt >>= 8;
-							h_cnt >>= 8;
-							l_cnt >>= 8;
-							k_cnt >>= 8;
+							bin += (char)(aa_cnt%256) + (char)(m_cnt%256) + (char)((j_cnt%256)) + (char)((i_cnt%256)) + (char)(h_cnt%256) + (char)(l_cnt%256) + (char)(n_cnt%256) + (char)(p_cnt%256);
+							aa_cnt >>= 8;
+							m_cnt >>= 1;
+							j_cnt >>= 2;
+							i_cnt >>= 3;
+							h_cnt >>= 4;
+							l_cnt >>= 5;
+							n_cnt >>= 6;
+							k_cnt >>= 7;
+							p_cnt >>= 8;
 						}
-						l_cnt = i_cnt = h_cnt = k_cnt = j_cnt = 0;
 					}
 				}
-				while (j_cnt > 0 || h_cnt > 0 || i_cnt > 0 || k_cnt > 0 || l_cnt > 0)
+				while (n_cnt%2 > 0 || p_cnt%2 > 0 || k_cnt%2 > 0 || i_cnt%2 > 0 || h_cnt%2 > 0 || j_cnt%2 > 0 || l_cnt > 1 || m_cnt > 1)
 				{
-					bin += (char)((j_cnt%256)) + (char)((h_cnt%256)) + (char)(i_cnt%256) + (char)(k_cnt%256) + (char)(l_cnt%256);
-					i_cnt >>= 8;
-					j_cnt >>= 8;
-					h_cnt >>= 8;
-					k_cnt >>= 8;
-					l_cnt >>= 8;
+					bin += (char)(aa_cnt%256) + (char)(m_cnt%256) + (char)((j_cnt%256)) + (char)((i_cnt%256)) + (char)(h_cnt%256) + (char)(l_cnt%256) + (char)(n_cnt%256) + (char)(p_cnt%256);
+					aa_cnt >>= 8;
+					m_cnt >>= 1;
+					j_cnt >>= 2;
+					i_cnt >>= 3;
+					h_cnt >>= 4;
+					l_cnt >>= 5;
+					n_cnt >>= 6;
+					k_cnt >>= 7;
+					p_cnt >>= 8;
 				}
-				l_cnt = i_cnt = h_cnt = k_cnt = j_cnt = 0;
 				c = c.substr(i%(c.length()+1));
-			}
-			if (i_cnt > 4)
-			{
-				bin += (char)(i_cnt) + (char)(ch%256);
-				i_cnt = 0;
-				ch >>= 8;
 			}
 			if (bin.length() > 100000)
 			{
